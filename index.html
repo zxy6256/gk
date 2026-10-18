@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6750A4">
+<title>2027 高考倒计时</title>
+<style>
+/* =========================================================
+   一、Material Design 3 主题变量
+   ========================================================= */
+:root {
+  /* 主题色（由 JS 动态覆盖，这里是默认紫罗兰） */
+  --primary: #6750A4;
+  --on-primary: #ffffff;
+  --primary-container: #EADDFF;
+  --on-primary-container: #21005D;
+  --primary-rgb: 103, 80, 164;
+
+  /* 中性色板 */
+  --bg: #F6F1FB;
+  --surface: #FFFFFF;
+  --surface-container: #F2ECF7;
+  --surface-variant: #E3DCE9;
+  --on-surface: #1C1B1F;
+  --on-surface-variant: #49454F;
+  --outline-variant: #CAC4D0;
+
+  /* 圆角与阴影 */
+  --radius-l: 24px;
+  --radius-m: 16px;
+  --shadow-1: 0 1px 2px rgba(0,0,0,.06), 0 1px 3px 1px rgba(0,0,0,.05);
+  --shadow-2: 0 2px 6px rgba(0,0,0,.09), 0 1px 2px rgba(0,0,0,.05);
+}
+
+/* 深色模式 */
+body.dark {
+  --bg: #131218;
+  --surface: #1D1B20;
+  --surface-container: #24222A;
+  --surface-variant: #48454E;
+  --on-surface: #E6E1E5;
+  --on-surface-variant: #CAC4D0;
+  --outline-variant: #49454F;
+  --shadow-1: 0 1px 3px rgba(0,0,0,.45);
+  --shadow-2: 0 2px 10px rgba(0,0,0,.55);
+}
+
+/* =========================================================
+   二、基础重置与页面布局
+   ========================================================= */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei",
+               "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--on-surface);
+  min-height: 100vh;
+  padding: 20px 16px 56px;
+  transition: background-color .3s ease, color .3s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 数字统一使用等宽数字，避免跳动 */
+.mono, .num, .bj-clock, .chip {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- 顶部栏 ---------- */
+.app-bar {
+  max-width: 900px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.app-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 auto 0 0;
+  color: var(--primary);
+  letter-spacing: .02em;
+  transition: color .3s ease;
+}
+
+.palette { display: flex; gap: 8px; align-items: center; }
+
+.swatch {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease;
+  outline: none;
+}
+.swatch:hover { transform: scale(1.15); }
+.swatch.active { border-color: var(--on-surface); transform: scale(1.12); }
+
+.icon-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-container);
+  color: var(--on-surface);
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color .2s ease, transform .12s ease;
+}
+.icon-btn:hover { background: var(--surface-variant); }
+.icon-btn:active { transform: scale(.94); }
+
+.btn-filled {
+  border: none;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: inherit;
+  font-size: .88rem;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: box-shadow .2s ease, transform .12s ease, background-color .3s ease;
+  white-space: nowrap;
+}
+.btn-filled:hover { box-shadow: var(--shadow-2); }
+.btn-filled:active { transform: scale(.96); }
+
+/* ---------- 内容容器 ---------- */
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- 通用卡片 ---------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-l);
+  padding: 22px;
+  box-shadow: var(--shadow-1);
+  transition: background-color .3s ease, box-shadow .3s ease;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: .02em;
+}
+
+.chip {
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+.chip.accent {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+/* =========================================================
+   三、模块一：倒计时（页面视觉主体）
+   ========================================================= */
+.hero {
+  background: linear-gradient(150deg, var(--primary-container) 0%, var(--surface) 72%);
+  text-align: center;
+  padding: 30px 18px 26px;
+}
+
+.hero-label {
+  margin: 0 0 4px;
+  font-size: .92rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: var(--on-surface-variant);
+}
+
+.countdown {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(10px, 3.4vw, 36px);
+  margin: 14px 0 16px;
+}
+
+.unit { display: flex; flex-direction: column; align-items: center; }
+
+.num {
+  font-size: clamp(2.2rem, 9vw, 4.6rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+  transition: color .3s ease;
+}
+
+.unit-label {
+  margin-top: 8px;
+  font-size: clamp(.72rem, 2.4vw, .95rem);
+  font-weight: 500;
+  letter-spacing: .18em;
+  color: var(--on-surface-variant);
+}
+
+.hero-sub {
+  margin: 0;
+  font-size: .8rem;
+  color: var(--on-surface-variant);
+  letter-spacing: .04em;
+}
+
+/* =========================================================
+   四、模块二：北京时间
+   ========================================================= */
+.bj-clock {
+  margin: 0 0 18px;
+  font-size: clamp(1.05rem, 3.6vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--on-surface);
+  line-height: 1.4;
+}
+
+.kv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 0;
+  border-top: 1px solid var(--outline-variant);
+  font-size: .86rem;
+}
+.kv .k { color: var(--on-surface-variant); flex: 0 0 auto; }
+.kv .v {
+  color: var(--on-surface);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* =========================================================
+   五、模块三：高三学年进度格
+   ========================================================= */
+.prog-summary {
+  margin: 0 0 12px;
+  font-size: .9rem;
+  color: var(--on-surface-variant);
+}
+.prog-summary strong {
+  color: var(--primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 100px;
+  background: var(--surface-variant);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 100px;
+  background: var(--primary);
+  transition: width .45s cubic-bezier(.2,0,0,1), background-color .3s ease;
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15px, 1fr));
+  gap: 4px;
+  margin: 18px 0 14px;
+}
+
+.cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  background: var(--surface-variant);
+  cursor: default;
+  position: relative;
+  transition: background-color .25s ease, transform .18s ease;
+}
+.cell.done { background: var(--primary); }
+.cell.future { background: var(--surface-variant); }
+.cell.today {
+  background: var(--primary);
+  animation: cellPulse 1.8s ease-in-out infinite;
+  z-index: 2;
+}
+.cell:hover {
+  transform: scale(1.4);
+  outline: 2px solid var(--primary);
+  z-index: 3;
+}
+
+/* 今天的格子呼吸/脉冲动画 */
+@keyframes cellPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), .65);
+  }
+  50% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 6px rgba(var(--primary-rgb), 0);
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: .78rem;
+  color: var(--on-surface-variant);
+}
+.lg { display: inline-flex; align-items: center; gap: 7px; }
+.sw {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.sw.done { background: var(--primary); }
+.sw.today {
+  background: var(--primary);
+  animation: cellPulse 1.8s ease-in-out infinite;
+}
+.sw.future { background: var(--surface-variant); }
+
+/* =========================================================
+   六、模块四：本周进度
+   ========================================================= */
+.week-text {
+  margin: 14px 0 0;
+  font-size: .88rem;
+  color: var(--on-surface-variant);
+}
+.week-text strong {
+  color: var(--primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.week-days {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: .74rem;
+  color: var(--on-surface-variant);
+  letter-spacing: .04em;
+}
+
+/* =========================================================
+   七、模块五：励志语句
+   ========================================================= */
+.quote-card {
+  text-align: center;
+  padding: 28px 24px;
+  background: linear-gradient(150deg, var(--surface) 0%, var(--primary-container) 130%);
+}
+.quote-text {
+  margin: 0 0 14px;
+  font-size: clamp(1rem, 3.4vw, 1.18rem);
+  line-height: 1.75;
+  font-weight: 600;
+  color: var(--on-surface);
+  letter-spacing: .02em;
+}
+.quote-author {
+  margin: 0;
+  font-size: .82rem;
+  color: var(--on-surface-variant);
+  letter-spacing: .06em;
+}
+
+/* =========================================================
+   八、全屏沉浸模式
+   ========================================================= */
+body.fs {
+  padding: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 全屏时隐藏除「倒计时」和「北京时间」外的其他模块 */
+body.fs .card:not(.hero):not(#timeCard) { display: none; }
+
+body.fs .content {
+  max-width: none;
+  width: 100%;
+  padding: 0 4vw;
+  gap: 3.5vh;
+}
+
+body.fs .hero,
+body.fs #timeCard {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+body.fs .num {
+  font-size: clamp(2.8rem, 13vw, 11rem);
+}
+body.fs .unit-label {
+  font-size: clamp(1rem, 2.8vw, 1.9rem);
+}
+body.fs .hero-label {
+  font-size: clamp(.9rem, 2.2vw, 1.5rem);
+}
+body.fs .bj-clock {
+  font-size: clamp(1.2rem, 4vw, 3rem);
+  margin-bottom: 10px;
+}
+body.fs .kv { font-size: clamp(.8rem, 1.8vw, 1.1rem); }
+
+/* 全屏时顶部栏固定在右上角，只保留退出按钮 */
+body.fs .app-bar {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  max-width: none;
+  margin: 0;
+  justify-content: flex-end;
+  z-index: 999;
+  width: auto;
+}
+body.fs .app-title,
+body.fs .palette,
+body.fs #darkBtn { display: none; }
+
+/* =========================================================
+   九、小屏适配
+   ========================================================= */
+@media (max-width: 480px) {
+  body { padding: 14px 12px 44px; }
+  .card { padding: 18px; border-radius: 20px; }
+  .hero { padding: 24px 12px 22px; }
+  .day-grid { grid-template-columns: repeat(auto-fill, minmax(13px, 1fr)); gap: 3px; }
+  .app-title { font-size: 1rem; }
+  .btn-filled { padding: 10px 16px; font-size: .82rem; }
+  .kv { font-size: .8rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 顶部栏 ================= -->
+<header class="app-bar">
+  <h1 class="app-title">2027 高考倒计时</h1>
+  <div class="palette" id="palette" role="group" aria-label="选择主题色"></div>
+  <button class="icon-btn" id="darkBtn" title="切换深色 / 浅色模式" aria-label="切换深色模式">🌙</button>
+  <button class="btn-filled" id="fsBtn">⛶ 全屏显示</button>
+</header>
+
+<main class="content">
+
+  <!-- ============ 模块一：2027 高考倒计时 ============ -->
+  <section class="card hero">
+    <p class="hero-label">距离 2027 年高考还有</p>
+    <div class="countdown">
+      <div class="unit"><span class="num" id="cdDays">000</span><span class="unit-label">天</span></div>
+      <div class="unit"><span class="num" id="cdHours">00</span><span class="unit-label">时</span></div>
+      <div class="unit"><span class="num" id="cdMins">00</span><span class="unit-label">分</span></div>
+      <div class="unit"><span class="num" id="cdSecs">00</span><span class="unit-label">秒</span></div>
+    </div>
+    <p class="hero-sub">目标时间：2027 年 6 月 7 日 09:00 · 北京时间（UTC+8）</p>
+  </section>
+
+  <!-- ============ 模块二：北京时间 ============ -->
+  <section class="card" id="timeCard">
+    <div class="card-head">
+      <span class="card-title">北京时间</span>
+      <span class="chip">UTC+8</span>
+    </div>
+    <p class="bj-clock" id="bjClock">----年--月--日 星期- --:--:--</p>
+    <div class="kv">
+      <span class="k">设备时间</span>
+      <span class="v mono" id="devClock">--</span>
+    </div>
+    <div class="kv">
+      <span class="k">设备时钟与北京时间的偏差</span>
+      <span class="v" id="devDelta">--</span>
+    </div>
+  </section>
+
+  <!-- ============ 模块三：高三学年进度格 ============ -->
+  <section class="card" id="progressCard">
+    <div class="card-head">
+      <span class="card-title">高三学年进度</span>
+      <span class="chip accent" id="totalPct">0.0%</span>
+    </div>
+    <p class="prog-summary">已走过 <strong id="passedDays">0</strong> 天 / 共 <strong id="totalDays">279</strong> 天</p>
+    <div class="bar"><div class="bar-fill" id="totalBar"></div></div>
+    <div class="day-grid" id="dayGrid" aria-label="高三学年每日进度网格"></div>
+    <div class="legend">
+      <span class="lg"><i class="sw done"></i>已过去</span>
+      <span class="lg"><i class="sw today"></i>今天</span>
+      <span class="lg"><i class="sw future"></i>未来</span>
+    </div>
+  </section>
+
+  <!-- ============ 模块四：本周进度 ============ -->
+  <section class="card" id="weekCard">
+    <div class="card-head">
+      <span class="card-title">本周进度</span>
+      <span class="chip accent" id="weekPctChip">0.0%</span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="weekBar"></div></div>
+    <p class="week-text">本周已过 <strong id="weekPctText">0.0%</strong></p>
+    <div class="week-days">
+      <span>周一</span><span>周二</span><span>周三</span><span>周四</span>
+      <span>周五</span><span>周六</span><span>周日</span>
+    </div>
+  </section>
+
+  <!-- ============ 模块五：每日励志语句 ============ -->
+  <section class="card quote-card">
+    <p class="quote-text" id="quoteText">正在准备今天的励志语…</p>
+    <p class="quote-author" id="quoteAuthor">—— 致正在奋斗的你</p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     一、基础常量
+     ---------------------------------------------------------
+     说明：所有跨时区的日期计算都统一换算为「伪 UTC 时间戳」：
+           pseudoTs = 真实时间戳 + 8 小时
+     这样用 Date 的 getUTC* 系列方法读出来的字段，
+     恰好就是北京时间的年/月/日/时/分/秒，
+     既不受设备所在时区影响，也不受夏令时影响。
+     ========================================================= */
+  const BJ_OFFSET = 8 * 60 * 60 * 1000;   // 北京时间相对 UTC 的偏移（毫秒）
+  const DAY_MS    = 24 * 60 * 60 * 1000;  // 一天的毫秒数
+  const WEEK_CN   = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+  // 高考目标时间：2027-06-07 09:00（北京时间）→ 伪 UTC 表示
+  const TARGET_PSEUDO = Date.UTC(2027, 5, 7, 9, 0, 0);
+
+  // 高三学年区间：2026-09-01 ~ 2027-06-06（含首尾两天）
+  const GRID_START_PSEUDO = Date.UTC(2026, 8, 1);
+  const GRID_END_PSEUDO   = Date.UTC(2027, 5, 6);
+  const GRID_TOTAL = Math.round((GRID_END_PSEUDO - GRID_START_PSEUDO) / DAY_MS) + 1; // = 279
+
+  /* =========================================================
+     二、工具函数
+     ========================================================= */
+  const pad2 = n => String(n).padStart(2, '0');
+
+  /** 仅在内容变化时写入 DOM，减少无谓的重排 */
+  function setText(node, text) {
+    if (node && node.textContent !== text) node.textContent = text;
+  }
+
+  /** 十六进制颜色 → "r, g, b" 字符串（用于 rgba() 动画） */
+  function hexToRgb(hex) {
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const num = parseInt(full, 16);
+    return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`;
+  }
+
+  /** 由伪 UTC 时间戳生成中文日期字符串，如「2026年09月01日 星期二」 */
+  function pseudoToCnDate(pseudoTs) {
+    const d = new Date(pseudoTs);
+    return `${d.getUTCFullYear()}年${pad2(d.getUTCMonth() + 1)}月${pad2(d.getUTCDate())}日 ${WEEK_CN[d.getUTCDay()]}`;
+  }
+
+  /* =========================================================
+     三、DOM 引用
+     ========================================================= */
+  const el = {
+    // 倒计时
+    cdDays:  document.getElementById('cdDays'),
+    cdHours: document.getElementById('cdHours'),
+    cdMins:  document.getElementById('cdMins'),
+    cdSecs:  document.getElementById('cdSecs'),
+    // 北京时间
+    bjClock:  document.getElementById('bjClock'),
+    devClock: document.getElementById('devClock'),
+    devDelta: document.getElementById('devDelta'),
+    // 学年进度
+    totalPct:   document.getElementById('totalPct'),
+    passedDays: document.getElementById('passedDays'),
+    totalDays:  document.getElementById('totalDays'),
+    totalBar:   document.getElementById('totalBar'),
+    grid:       document.getElementById('dayGrid'),
+    // 本周进度
+    weekPctChip: document.getElementById('weekPctChip'),
+    weekPctText: document.getElementById('weekPctText'),
+    weekBar:     document.getElementById('weekBar'),
+    // 励志语
+    quoteText:   document.getElementById('quoteText'),
+    quoteAuthor: document.getElementById('quoteAuthor'),
+    // 顶部栏
+    palette: document.getElementById('palette'),
+    darkBtn: document.getElementById('darkBtn'),
+    fsBtn:   document.getElementById('fsBtn')
+  };
+
+  /* =========================================================
+     四、模块五：励志语句库（42 条）
+     ========================================================= */
+  const QUOTES = [
+    { text: '乾坤未定，你我皆是黑马。' },
+    { text: '既然选择了远方，便只顾风雨兼程。', author: '汪国真' },
+    { text: '你现在的努力，是为了以后拥有更多选择的权利。' },
+    { text: '不苦不累，高三无味；不拼不搏，高三白活。' },
+    { text: '天道酬勤，功不唐捐。' },
+    { text: '每一个不曾起舞的日子，都是对生命的辜负。', author: '尼采' },
+    { text: '越努力，越幸运。' },
+    { text: '今天的你，比昨天更接近梦想。' },
+    { text: '高考不是人生的终点，但值得你全力以赴。' },
+    { text: '你只管努力，剩下的交给时间。' },
+    { text: '星光不问赶路人，时光不负有心人。' },
+    { text: '山高路远，看脚下这一步就好。' },
+    { text: '坚持的意义，就在于坚持本身。' },
+    { text: '别在最好的年纪，辜负最好的自己。' },
+    { text: '所有的努力，都会在六月开花。' },
+    { text: '心之所向，素履以往。' },
+    { text: '莫问收获，但问耕耘。', author: '曾国藩' },
+    { text: '你现在偷的懒，都会变成以后打脸的巴掌。' },
+    { text: '少年的肩，应担得起草长莺飞与清风明月。' },
+    { text: '拼一个春夏秋冬，赢一个无悔人生。' },
+    { text: '书山有路勤为径，学海无涯苦作舟。' },
+    { text: '你有多自律，就有多自由。' },
+    { text: '熬过无人问津的日子，才有诗和远方。' },
+    { text: '每一次咬牙坚持，都是在为未来铺路。' },
+    { text: '相信自己，你比想象中更强大。' },
+    { text: '不要因为走得慢就停下脚步，因为你没有退路。' },
+    { text: '今日之汗水，明日之勋章。' },
+    { text: '人生没有白走的路，每一步都算数。' },
+    { text: '把每一天，都当作高考前一天来珍惜。' },
+    { text: '现在的坚持，是为了六月考场的从容。' },
+    { text: '哪有什么天生学霸，不过是把别人喝咖啡的时间用在了书上。' },
+    { text: '你要悄悄拔尖，然后惊艳所有人。' },
+    { text: '千淘万漉虽辛苦，吹尽狂沙始到金。', author: '刘禹锡' },
+    { text: '长风破浪会有时，直挂云帆济沧海。', author: '李白' },
+    { text: '会当凌绝顶，一览众山小。', author: '杜甫' },
+    { text: '路虽远，行则将至；事虽难，做则必成。' },
+    { text: '不为失败找借口，只为成功找方法。' },
+    { text: '与其临渊羡鱼，不如退而结网。' },
+    { text: '再长的路，一步步也能走完。' },
+    { text: '愿你合上笔盖的那一刻，有着战士收刀入鞘的骄傲。' },
+    { text: '只有极其努力，才能看起来毫不费力。' },
+    { text: '青春须早为，岂能长少年。', author: '孟郊' }
+  ];
+
+  /* =========================================================
+     五、主题色 / 深色模式
+     ========================================================= */
+  const THEMES = [
+    { name: '紫罗兰', primary: '#6750A4', container: '#EADDFF', onContainer: '#21005D',
+      dPrimary: '#D0BCFF', dContainer: '#4F378B', dOnContainer: '#EADDFF' },
+    { name: '蔚蓝',   primary: '#0061A4', container: '#D1E4FF', onContainer: '#001D36',
+      dPrimary: '#9ECAFF', dContainer: '#00497D', dOnContainer: '#D1E4FF' },
+    { name: '翠绿',   primary: '#386A20', container: '#B7F397', onContainer: '#0B2000',
+      dPrimary: '#9CD67D', dContainer: '#1F5300', dOnContainer: '#B7F397' },
+    { name: '暖橙',   primary: '#8B5000', container: '#FFDCBE', onContainer: '#2D1600',
+      dPrimary: '#FFB870', dContainer: '#6B3A00', dOnContainer: '#FFDCBE' },
+    { name: '玫红',   primary: '#9C4146', container: '#FFDAD9', onContainer: '#410008',
+      dPrimary: '#FFB3AE', dContainer: '#7B2C31', dOnContainer: '#FFDAD9' },
+    { name: '青碧',   primary: '#00696E', container: '#9CF1F6', onContainer: '#002022',
+      dPrimary: '#80D4DA', dContainer: '#004F53', dOnContainer: '#9CF1F6' }
+  ];
+
+  let currentTheme = 0;
+
+  /** 应用当前主题（同时考虑深色模式） */
+  function applyTheme() {
+    const t = THEMES[currentTheme];
+    const dark = document.body.classList.contains('dark');
+    const root = document.documentElement.style;
+
+    const primary    = dark ? t.dPrimary    : t.primary;
+    const container  = dark ? t.dContainer  : t.container;
+    const onContainer= dark ? t.dOnContainer: t.onContainer;
+
+    root.setProperty('--primary', primary);
+    root.setProperty('--primary-container', container);
+    root.setProperty('--on-primary-container', onContainer);
+    root.setProperty('--primary-rgb', hexToRgb(primary));
+
+    // 更新色板按钮的选中态
+    Array.from(el.palette.children).forEach((btn, i) => {
+      btn.classList.toggle('active', i === currentTheme);
+    });
+  }
+
+  /** 生成主题色按钮 */
+  function buildPalette() {
+    THEMES.forEach((t, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'swatch';
+      btn.style.background = t.primary;
+      btn.title = t.name;
+      btn.setAttribute('aria-label', '主题色：' + t.name);
+      btn.addEventListener('click', () => {
+        currentTheme = i;
+        applyTheme();
+      });
+      el.palette.appendChild(btn);
+    });
+  }
+
+  el.darkBtn.addEventListener('click', () => {
+    const dark = document.body.classList.toggle('dark');
+    el.darkBtn.textContent = dark ? '☀️' : '🌙';
+    applyTheme();
+  });
+
+  /* =========================================================
+     六、全屏模式（Fullscreen API）
+     ========================================================= */
+  el.fsBtn.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      // 某些环境（如 iframe / 老旧浏览器）不支持全屏，退化为纯 CSS 沉浸模式
+      document.body.classList.toggle('fs');
+      el.fsBtn.textContent = document.body.classList.contains('fs') ? '✕ 退出全屏' : '⛶ 全屏显示';
+    }
+  });
+
+  // 全屏状态变化（包括按 Esc 退出）时同步 UI
+  document.addEventListener('fullscreenchange', () => {
+    const on = !!document.fullscreenElement;
+    document.body.classList.toggle('fs', on);
+    el.fsBtn.textContent = on ? '✕ 退出全屏' : '⛶ 全屏显示';
+  });
+
+  /* =========================================================
+     七、学年进度网格：构建与状态更新
+     ========================================================= */
+  let lastTodayIndex = null; // 缓存「今天」的索引，避免每秒重刷全部格子
+
+  /** 一次性创建 279 个格子 */
+  function buildGrid() {
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < GRID_TOTAL; i++) {
+      const ts = GRID_START_PSEUDO + i * DAY_MS;
+      const cell = document.createElement('div');
+      cell.className = 'cell future';
+      cell.title = pseudoToCnDate(ts);          // 悬停显示对应日期
+      cell.setAttribute('aria-label', cell.title);
+      frag.appendChild(cell);
+    }
+    el.grid.appendChild(frag);
+  }
+
+  /** 根据今天索引刷新所有格子状态 */
+  function applyGridStates(todayIndex) {
+    const cells = el.grid.children;
+    for (let i = 0; i < cells.length; i++) {
+      const cls = i < todayIndex ? 'cell done'
+                : i === todayIndex ? 'cell today'
+                : 'cell future';
+      if (cells[i].className !== cls) cells[i].className = cls;
+    }
+  }
+
+  /* =========================================================
+     八、核心渲染循环（每秒执行一次）
+     ========================================================= */
+  function render() {
+    const nowReal = Date.now();
+    const pseudo  = nowReal + BJ_OFFSET;   // 伪 UTC 时间戳（字段 = 北京时间）
+    const bj      = new Date(pseudo);
+
+    /* ---------- 模块一：高考倒计时 ---------- */
+    const rest = Math.max(0, TARGET_PSEUDO - pseudo);
+    const dDay = Math.floor(rest / DAY_MS);
+    const dHour = Math.floor((rest % DAY_MS) / 3600000);
+    const dMin  = Math.floor((rest % 3600000) / 60000);
+    const dSec  = Math.floor((rest % 60000) / 1000);
+
+    setText(el.cdDays,  String(dDay).padStart(3, '0'));
+    setText(el.cdHours, pad2(dHour));
+    setText(el.cdMins,  pad2(dMin));
+    setText(el.cdSecs,  pad2(dSec));
+
+    /* ---------- 模块二：北京时间 + 设备时间 ---------- */
+    const bjStr =
+      `${bj.getUTCFullYear()}年${pad2(bj.getUTCMonth() + 1)}月${pad2(bj.getUTCDate())}日 ` +
+      `${WEEK_CN[bj.getUTCDay()]} ` +
+      `${pad2(bj.getUTCHours())}:${pad2(bj.getUTCMinutes())}:${pad2(bj.getUTCSeconds())}`;
+    setText(el.bjClock, bjStr);
+
+    // 设备本地时间
+    const dev = new Date(nowReal);
+    const devStr =
+      `${dev.getFullYear()}年${pad2(dev.getMonth() + 1)}月${pad2(dev.getDate())}日 ` +
+      `${WEEK_CN[dev.getDay()]} ` +
+      `${pad2(dev.getHours())}:${pad2(dev.getMinutes())}:${pad2(dev.getSeconds())}`;
+    setText(el.devClock, devStr);
+
+    // 设备时钟与北京时间的偏差（单位：秒，精确到两位小数）
+    // getTimezoneOffset() 返回「UTC - 本地」的分钟数，取负得到本地相对 UTC 的偏移
+    const devOffsetSec = -dev.getTimezoneOffset() * 60;
+    const deltaSec = devOffsetSec - 8 * 3600;     // 设备时钟读数比北京时间快多少秒
+    const deltaAbs = Math.abs(deltaSec).toFixed(2);
+    let deltaText;
+    if (Math.abs(deltaSec) < 0.005) {
+      deltaText = `0.00 秒（与北京时间同步）`;
+    } else {
+      deltaText = `比北京时间${deltaSec > 0 ? '快' : '慢'} ${deltaAbs} 秒`;
+    }
+    setText(el.devDelta, deltaText);
+
+    /* ---------- 模块三：高三学年进度 ---------- */
+    // 北京时间「今天 00:00」的伪 UTC 时间戳
+    const todayStart = Math.floor(pseudo / DAY_MS) * DAY_MS;
+    // 今天是学年区间的第几天（0 表示第一天）
+    const todayIndex = Math.round((todayStart - GRID_START_PSEUDO) / DAY_MS);
+
+    // 已走过天数（完整过完的天数），并夹紧到 [0, GRID_TOTAL]
+    const passedDays = Math.min(Math.max(todayIndex, 0), GRID_TOTAL);
+    // 含今天已过时长的总进度
+    const elapsedMs = Math.min(Math.max(pseudo - GRID_START_PSEUDO, 0), GRID_TOTAL * DAY_MS);
+    const totalPct  = (elapsedMs / (GRID_TOTAL * DAY_MS)) * 100;
+
+    setText(el.passedDays, String(passedDays));
+    setText(el.totalDays, String(GRID_TOTAL));
+    setText(el.totalPct, totalPct.toFixed(1) + '%');
+    el.totalBar.style.width = totalPct.toFixed(2) + '%';
+
+    // 只有「今天」变化时才重刷 279 个格子的状态
+    if (todayIndex !== lastTodayIndex) {
+      applyGridStates(todayIndex);
+      lastTodayIndex = todayIndex;
+    }
+
+    /* ---------- 模块四：本周进度（按小时精度） ---------- */
+    const dow = bj.getUTCDay();                  // 0 = 星期日
+    const mondayOffset = (dow + 6) % 7;          // 距本周一的天数（周一 = 0）
+    const weekStart = todayStart - mondayOffset * DAY_MS;
+    const weekPct = Math.min(100, Math.max(0, ((pseudo - weekStart) / (7 * DAY_MS)) * 100));
+
+    setText(el.weekPctChip, weekPct.toFixed(1) + '%');
+    setText(el.weekPctText, weekPct.toFixed(1) + '%');
+    el.weekBar.style.width = weekPct.toFixed(2) + '%';
+
+    /* ---------- 模块五：每日励志语句 ---------- */
+    // 用北京日期序号作为种子，保证同一天内刷新页面显示同一条
+    const daySeed = Math.floor(pseudo / DAY_MS);
+    const q = QUOTES[((daySeed % QUOTES.length) + QUOTES.length) % QUOTES.length];
+    setText(el.quoteText, q.text);
+    setText(el.quoteAuthor, '—— ' + (q.author || '致正在奋斗的你'));
+  }
+
+  /* =========================================================
+     九、对齐秒边界的循环调度
+     ========================================================= */
+  function tick() {
+    render();
+    // 让下一次刷新刚好落在下一个整秒之后一点，保证秒数跳动平滑
+    const delay = 1000 - (Date.now() % 1000) + 8;
+    setTimeout(tick, delay);
+  }
+
+  /* =========================================================
+     十、初始化
+     ========================================================= */
+  function init() {
+    buildPalette();
+    buildGrid();
+    applyTheme();
+    el.totalDays.textContent = String(GRID_TOTAL);
+    tick();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
